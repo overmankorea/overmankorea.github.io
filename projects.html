@@ -176,12 +176,13 @@
         household finance, and behavioral IO.
       </p>
 
-      <div class="project-stats">
-        <div class="stat-item"><strong>142</strong>nodes</div>
-        <div class="stat-item"><strong>408</strong>connections</div>
-        <div class="stat-item"><strong>54</strong>papers</div>
-        <div class="stat-item"><strong>47</strong>researchers</div>
-        <div class="stat-item"><strong>11</strong>topic clusters</div>
+      <!-- Numbers below are refreshed from graph.json on load; these are the fallback. -->
+      <div class="project-stats" data-graph="behavioral-econ-map">
+        <div class="stat-item"><strong data-stat="nodes">189</strong>nodes</div>
+        <div class="stat-item"><strong data-stat="links">547</strong>connections</div>
+        <div class="stat-item"><strong data-stat="paper">73</strong>papers</div>
+        <div class="stat-item"><strong data-stat="researcher">74</strong>researchers</div>
+        <div class="stat-item"><strong data-stat="topic">11</strong>topic clusters</div>
       </div>
 
       <div class="project-links">
@@ -235,12 +236,12 @@
         this Korean policy question?"</em>
       </p>
 
-      <div class="project-stats">
-        <div class="stat-item"><strong>92</strong>nodes</div>
-        <div class="stat-item"><strong>204</strong>connections</div>
-        <div class="stat-item"><strong>31</strong>papers</div>
-        <div class="stat-item"><strong>30</strong>researchers</div>
-        <div class="stat-item"><strong>7</strong>policy areas</div>
+      <div class="project-stats" data-graph="korea-policy-papers">
+        <div class="stat-item"><strong data-stat="nodes">92</strong>nodes</div>
+        <div class="stat-item"><strong data-stat="links">204</strong>connections</div>
+        <div class="stat-item"><strong data-stat="paper">31</strong>papers</div>
+        <div class="stat-item"><strong data-stat="researcher">30</strong>researchers</div>
+        <div class="stat-item"><strong data-stat="topic">7</strong>policy areas</div>
       </div>
 
       <div class="project-links">
@@ -277,6 +278,49 @@
   </div>
 
 </main>
+
+<script>
+// Keep the project-card counts in step with the maps themselves.
+//
+// Each map publishes the graph it renders at /<repo>/graph.json, and both maps
+// are served from this same origin, so these are plain same-origin fetches —
+// no CORS, no build step, no numbers to retype when the ontology grows.
+// The markup ships with the current values, so a failed fetch (offline, or the
+// map mid-redeploy) simply leaves the fallback in place.
+(function () {
+  var FALLBACK_NOTE = "showing last known counts";
+
+  document.querySelectorAll(".project-stats[data-graph]").forEach(function (block) {
+    fetch("/" + block.dataset.graph + "/graph.json", { cache: "no-store" })
+      .then(function (res) {
+        if (!res.ok) throw new Error(res.status);
+        return res.json();
+      })
+      .then(function (graph) {
+        var byType = {};
+        graph.nodes.forEach(function (n) {
+          byType[n.type] = (byType[n.type] || 0) + 1;
+        });
+
+        var counts = {
+          nodes: graph.nodes.length,
+          links: graph.links.length,
+          paper: byType.paper || 0,
+          researcher: byType.researcher || 0,
+          topic: byType.topic || 0
+        };
+
+        block.querySelectorAll("strong[data-stat]").forEach(function (el) {
+          var value = counts[el.dataset.stat];
+          if (typeof value === "number") el.textContent = value;
+        });
+      })
+      .catch(function () {
+        block.title = FALLBACK_NOTE;
+      });
+  });
+})();
+</script>
 
 </body>
 </html>
