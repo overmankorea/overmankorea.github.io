@@ -30,7 +30,8 @@
   <p class="hub-intro">
     Papers I came across and wanted to keep, with whatever I thought at the time.
     Click an entry to open the note. Search runs over the notes too, so a method
-    name like <em>RDD</em> or <em>event study</em> will find the papers that used it.
+    name like <em>difference-in-differences</em> or <em>event study</em> will find
+    the papers that used it.
   </p>
 
   <div class="archive-controls">
@@ -77,8 +78,11 @@
 //   year    number
 //   field   string   the single filter axis
 //   added   string   "YYYY-MM-DD"; sorts the list, newest first
-//   link    string   optional; only http(s) is rendered
-//   note    string[] one entry per paragraph, no markdown
+//   link      string   optional; only http(s) is rendered
+//   takeaways string[] one entry per bullet under "Key takeaways"
+//   comments  string   my own take, under "My comments"; "" hides the whole
+//                      section, and "\n" splits it into paragraphs
+//   source    string   optional provenance line, shown small at the bottom
 //
 // Everything from the file lands on the page through textContent, so a stray
 // angle bracket in a note is text, not markup.
@@ -128,9 +132,18 @@
     return /^https?:\/\//i.test(url || "") ? url : "";
   }
 
+  function label(text) {
+    var h = document.createElement("h4");
+    h.className = "archive-label";
+    h.textContent = text;
+    return h;
+  }
+
+  // Search covers the takeaways and comments, not just the bibliographic line —
+  // that is how a method name ("difference-in-differences") finds its papers.
   function haystack(p) {
-    return [p.title, p.authors, p.venue, p.year, p.field]
-      .concat(p.note || [])
+    return [p.title, p.authors, p.venue, p.year, p.field, p.comments, p.source]
+      .concat(p.takeaways || [])
       .join(" ")
       .toLowerCase();
   }
@@ -211,11 +224,37 @@
     body.className = "archive-body";
     body.hidden = true;
 
-    (p.note || []).forEach(function (paragraph) {
-      var para = document.createElement("p");
-      para.textContent = paragraph;
-      body.appendChild(para);
-    });
+    // Key takeaways — what the paper does and finds.
+    if ((p.takeaways || []).length) {
+      body.appendChild(label("Key takeaways"));
+      var list = document.createElement("ul");
+      list.className = "archive-takeaways";
+      p.takeaways.forEach(function (point) {
+        var li = document.createElement("li");
+        li.textContent = point;
+        list.appendChild(li);
+      });
+      body.appendChild(list);
+    }
+
+    // My comments — omitted entirely until there is something to say, so an
+    // unwritten note leaves no empty heading behind.
+    if (p.comments) {
+      body.appendChild(label("My comments"));
+      String(p.comments).split("\n").forEach(function (paragraph) {
+        if (!paragraph.trim()) return;
+        var para = document.createElement("p");
+        para.textContent = paragraph;
+        body.appendChild(para);
+      });
+    }
+
+    if (p.source) {
+      var source = document.createElement("p");
+      source.className = "archive-source";
+      source.textContent = p.source;
+      body.appendChild(source);
+    }
 
     var href = safeUrl(p.link);
     if (href) {
