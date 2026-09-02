@@ -1,0 +1,34 @@
+{
+  "papers": [
+    {
+      "id": "bernheim-taubinsky-2018",
+      "title": "Behavioral Public Economics",
+      "authors": "B. Douglas Bernheim & Dmitry Taubinsky",
+      "venue": "Handbook of Behavioral Economics, Vol. 1",
+      "year": 2018,
+      "field": "public",
+      "added": "2026-09-02",
+      "link": "",
+      "note": [
+        "The chapter that draws the border around the field. Its organizing problem is what happens to welfare analysis once you admit that people make mistakes: revealed preference stops being a reliable statement about what is good for someone, so the planner needs a different object to maximize and a defensible way to recover it.",
+        "It works through corrective taxation, nudges and defaults, present bias, social insurance, household finance, and behavioral IO — which is also why it became the ontology backbone for the behavioral-econ-map on the other side of this page.",
+        "Replace this note with your own — it is a summary, not yet a reading."
+      ]
+    },
+    {
+      "id": "template-entry",
+      "title": "— template: copy this block to add a paper —",
+      "authors": "Author One & Author Two",
+      "venue": "Journal Name",
+      "year": 2026,
+      "field": "labor",
+      "added": "2026-09-01",
+      "link": "https://example.com/replace-with-the-paper-url",
+      "note": [
+        "Each string in this array becomes its own paragraph, so write as many as the paper deserves. There is no markdown parsing — plain sentences only.",
+        "'field' is the single filter axis, and the chips on this page are generated from whatever values actually appear in papers.json. Invent a new one and its chip shows up on the next load. 'added' drives the sort order (newest first) and 'link' is optional — leave it as \"\" and no link button renders.",
+        "Delete this entry once you have a couple of real ones."
+      ]
+    }
+  ]
+}

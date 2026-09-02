@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Paper Archive — Wonwoo (William) Kim</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a class="site-name" href="index.html">Wonwoo (William) Kim</a>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="cv.html">CV</a>
+      <a href="research.html">Research</a>
+      <a href="teaching.html">Teaching</a>
+      <a href="projects.html" class="active">Projects</a>
+      <a href="contact.html">Contact</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <a class="back-link" href="projects.html">← Projects</a>
+  <h2 class="page-title">Paper Archive</h2>
+  <hr class="page-divider">
+
+  <p class="hub-intro">
+    Papers I came across and wanted to keep, with whatever I thought at the time.
+    Click an entry to open the note. Search runs over the notes too, so a method
+    name like <em>RDD</em> or <em>event study</em> will find the papers that used it.
+  </p>
+
+  <div class="archive-controls">
+    <input
+      class="archive-search"
+      id="archive-search"
+      type="search"
+      placeholder="Search titles, authors, journals, notes…"
+      aria-label="Search the paper archive"
+    />
+    <div class="archive-chips" id="archive-chips" role="group" aria-label="Filter by field"></div>
+  </div>
+
+  <p class="archive-count" id="archive-count" aria-live="polite"></p>
+
+  <div id="archive-list">
+    <noscript>
+      <p class="archive-empty">
+        The archive is rendered from <code>papers.json</code> in the browser, so it needs
+        JavaScript. The raw file is readable directly at
+        <a href="papers.json">papers.json</a>.
+      </p>
+    </noscript>
+  </div>
+</main>
+
+<!-- Cloned per row rather than built by hand, so no markup is ever assembled from strings. -->
+<template id="caret-template">
+  <svg class="archive-caret" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+</template>
+
+<script>
+// Paper archive — renders papers.json, filters by field, searches across everything.
+//
+// Adding a paper means appending one object to papers.json. Nothing here is
+// hardcoded to the current contents: the field chips are derived from the values
+// that actually appear in the data, so a new field creates its own chip.
+//
+// Schema (see papers.json for a worked template):
+//   id      string   unique slug
+//   title   string
+//   authors string
+//   venue   string   journal, handbook, working paper series…
+//   year    number
+//   field   string   the single filter axis
+//   added   string   "YYYY-MM-DD"; sorts the list, newest first
+//   link    string   optional; only http(s) is rendered
+//   note    string[] one entry per paragraph, no markdown
+//
+// Everything from the file lands on the page through textContent, so a stray
+// angle bracket in a note is text, not markup.
+(function () {
+  var listEl = document.getElementById("archive-list");
+  var chipsEl = document.getElementById("archive-chips");
+  var searchEl = document.getElementById("archive-search");
+  var countEl = document.getElementById("archive-count");
+
+  var papers = [];
+  var activeField = "all";
+  var query = "";
+
+  fetch("papers.json", { cache: "no-store" })
+    .then(function (res) {
+      if (!res.ok) throw new Error(res.status);
+      return res.json();
+    })
+    .then(function (data) {
+      papers = (data.papers || []).slice().sort(function (a, b) {
+        return String(b.added || "").localeCompare(String(a.added || ""));
+      });
+      buildChips();
+      render();
+    })
+    .catch(function () {
+      countEl.textContent = "";
+      replaceChildren(listEl, message("Could not load the archive just now."));
+    });
+
+  // ── helpers ──
+
+  function replaceChildren(parent, child) {
+    parent.textContent = "";
+    if (child) parent.appendChild(child);
+  }
+
+  function message(text) {
+    var p = document.createElement("p");
+    p.className = "archive-empty";
+    p.textContent = text;
+    return p;
+  }
+
+  // Only ever hand an http(s) URL to href — no javascript: or data: from the data file.
+  function safeUrl(url) {
+    return /^https?:\/\//i.test(url || "") ? url : "";
+  }
+
+  function haystack(p) {
+    return [p.title, p.authors, p.venue, p.year, p.field]
+      .concat(p.note || [])
+      .join(" ")
+      .toLowerCase();
+  }
+
+  function matches(p) {
+    if (activeField !== "all" && p.field !== activeField) return false;
+    return !query || haystack(p).indexOf(query) !== -1;
+  }
+
+  // ── field chips, derived from the data ──
+
+  function buildChips() {
+    var fields = [];
+    papers.forEach(function (p) {
+      if (p.field && fields.indexOf(p.field) === -1) fields.push(p.field);
+    });
+    fields.sort();
+
+    ["all"].concat(fields).forEach(function (field) {
+      var chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "archive-chip";
+      chip.textContent = field === "all" ? "All" : field;
+      chip.setAttribute("aria-pressed", String(field === activeField));
+
+      chip.addEventListener("click", function () {
+        activeField = field;
+        Array.prototype.forEach.call(
+          chipsEl.querySelectorAll(".archive-chip"),
+          function (other) { other.setAttribute("aria-pressed", String(other === chip)); }
+        );
+        render();
+      });
+
+      chipsEl.appendChild(chip);
+    });
+  }
+
+  // ── one entry ──
+
+  function makeItem(p) {
+    var item = document.createElement("article");
+    item.className = "archive-item";
+
+    var head = document.createElement("button");
+    head.type = "button";
+    head.className = "archive-head";
+    head.setAttribute("aria-expanded", "false");
+
+    var lead = document.createElement("div");
+
+    var title = document.createElement("div");
+    title.className = "archive-title";
+    title.textContent = p.title || "Untitled";
+    lead.appendChild(title);
+
+    var meta = document.createElement("div");
+    meta.className = "archive-meta";
+    meta.textContent = [p.authors, p.venue, p.year].filter(Boolean).join("  ·  ");
+    lead.appendChild(meta);
+
+    var side = document.createElement("div");
+    side.className = "archive-side";
+    if (p.field) {
+      var tag = document.createElement("span");
+      tag.className = "archive-field";
+      tag.textContent = p.field;
+      side.appendChild(tag);
+    }
+    side.appendChild(
+      document.getElementById("caret-template").content.firstElementChild.cloneNode(true)
+    );
+
+    head.appendChild(lead);
+    head.appendChild(side);
+
+    var body = document.createElement("div");
+    body.className = "archive-body";
+    body.hidden = true;
+
+    (p.note || []).forEach(function (paragraph) {
+      var para = document.createElement("p");
+      para.textContent = paragraph;
+      body.appendChild(para);
+    });
+
+    var href = safeUrl(p.link);
+    if (href) {
+      var link = document.createElement("a");
+      link.className = "archive-link";
+      link.href = href;
+      link.target = "_blank";
+      link.rel = "noopener";
+      link.textContent = "Read the paper →";
+      body.appendChild(link);
+    }
+
+    head.addEventListener("click", function () {
+      var open = head.getAttribute("aria-expanded") === "true";
+      head.setAttribute("aria-expanded", String(!open));
+      body.hidden = open;
+    });
+
+    item.appendChild(head);
+    item.appendChild(body);
+    return item;
+  }
+
+  // ── render ──
+
+  function render() {
+    var shown = papers.filter(matches);
+
+    listEl.textContent = "";
+    if (!shown.length) {
+      listEl.appendChild(message("No papers match that."));
+    } else {
+      shown.forEach(function (p) { listEl.appendChild(makeItem(p)); });
+    }
+
+    countEl.textContent = shown.length + (shown.length === 1 ? " paper" : " papers");
+  }
+
+  searchEl.addEventListener("input", function () {
+    query = searchEl.value.trim().toLowerCase();
+    render();
+  });
+})();
+</script>
+
+</body>
+</html>
