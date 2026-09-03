@@ -68,8 +68,11 @@
   <div class="pdf-wrapper">
     <div class="pdf-toolbar">
       <span>CV_Wonwoo Kim.pdf</span>
-      <!-- ✏️ Update the href below to match your PDF filename -->
-      <a class="cv-download" href="CV_Wonwoo Kim.pdf" style="margin:0;" download>
+      <!-- The PDF keeps the same filename across updates, so the ?v= below is what
+           actually busts the browser cache. Bump it (here and on the iframe) whenever
+           you replace the PDF, or visitors keep seeing the previous CV. -->
+      <a class="cv-download" href="CV_Wonwoo Kim.pdf?v=2026-09-02" style="margin:0;"
+         download="CV_Wonwoo Kim.pdf">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
           <polyline points="7 10 12 15 17 10"/>
@@ -79,16 +82,16 @@
       </a>
     </div>
 
-    <!-- ✏️ Change "Wonwoo_Kim_CV.pdf" to your actual PDF filename in the repo -->
+    <!-- Bump ?v= together with the download link above. -->
     <iframe
-      src="CV_Wonwoo Kim.pdf"
+      src="CV_Wonwoo Kim.pdf?v=2026-09-02"
       title="CV_Wonwoo Kim"
       onerror="this.style.display='none'; document.querySelector('.pdf-fallback').style.display='block';">
     </iframe>
 
     <div class="pdf-fallback">
       Your browser couldn't display the PDF inline.
-      <a href="CV_Wonwoo Kim.pdf" download>Click here to download it instead.</a>
+      <a href="CV_Wonwoo Kim.pdf?v=2026-09-02" download="CV_Wonwoo Kim.pdf">Click here to download it instead.</a>
     </div>
   </div>
 
